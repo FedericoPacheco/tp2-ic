@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 # Ver: ROCm, DirectML para usar GPU AMD
 
 
-# Funcion general para el calculo del fitness  de cada individuo
+# Funcion general para el calculo del fitness de cada individuo
 def fitness_func(ga_instance, solution, sol_idx, x_arr, y_true_arr, model):
     
-    # Transformar el el cromosoma de arreglo 1D a matriz y asignar al modelo de keras
+    # Transformar el el cromosoma de arreglo 1D (cromosoma) a matriz y asignar al modelo de keras
     model_weights_matrix = pygad.kerasga.model_weights_as_matrix(model = model, weights_vector = solution)
     model.set_weights(weights = model_weights_matrix)
 
@@ -32,7 +32,7 @@ def callback_generation(ga_instance):
 def hermite_polynomial():
 
     # Crear configuracion del paper: 1-15-1, con tansig-tansig-reglin
-    def create_model():
+    def create_keras_model():
         input_layer  = tensorflow.keras.layers.Input(1)
         dense_layer = tensorflow.keras.layers.Dense(15, activation="tanh")
         output_layer = tensorflow.keras.layers.Dense(1, activation="linear")
@@ -42,6 +42,8 @@ def hermite_polynomial():
         model.add(dense_layer)
         model.add(output_layer)
 
+        print("Cantidad de parametros del modelo: ", model.count_params())
+        
         return model
     
     # Generar datos de entrenamiento y prueba, evaluando el polinomio en distintos valores de x
@@ -58,9 +60,9 @@ def hermite_polynomial():
 
     # Parametros
     # Ver: https://pygad.readthedocs.io/en/latest/pygad.html#pygad-ga-class
-    num_solutions = 10
-    num_generations = 10#100
-    num_parents_mating = 5
+    num_solutions = 10 # individuos
+    num_generations = 20 #100 # iteraciones
+    num_parents_mating = 5 # Number of solutions to be selected as parents in the mating pool.
     # Tipos:
     # sss: steady-state selection, rws: roulette wheel selection, random,
     # sus: stochastic universal selection, rank, tournament
@@ -73,10 +75,11 @@ def hermite_polynomial():
     p_mutation = 0.01
 
     # Configurar busqueda por GA
-    hermite_model = create_model()
+    hermite_model = create_keras_model()
     x_train_arr, h_train_arr, x_test_arr, h_test_arr = generate_data()
     keras_ga = pygad.kerasga.KerasGA(model = hermite_model, num_solutions = num_solutions)
-    initial_population = keras_ga.population_weights
+    # A nested list holding the model parameters. This list is updated after each generation.
+    initial_population = keras_ga.population_weights # shape = (num_solutions, parameters) -> un array 1D de todos los parametros para cada individuo (solucion)
     
     ga_instance = pygad.GA(
         num_generations = num_generations, 
@@ -116,7 +119,12 @@ def hermite_polynomial():
     plt.plot(x_test_arr, best_sol_h_predic_arr, "red", label = "Modelo")
     plt.legend(loc = "upper left")
     plt.show()
-
+    
+    # Terminar de entrenar modelo con keras
+    hermite_model.compile(loss = "mse", optimizer = "adam", metrics = ["accuracy"])
+    # Ya tiene los pesos del AG
+    hermite_model.fit(x_train_arr, h_train_arr, epochs=2, 
+                      validation_data=(x_test_arr, h_test_arr), verbose=2)
 
 if __name__ == "__main__":
     hermite_polynomial()
