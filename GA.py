@@ -1,5 +1,5 @@
 import pygad.kerasga
-import tensorflow.keras
+import tensorflow #Me da error cuando esta tensorflow.keras, prueben asi
 import numpy as np
 import matplotlib.pyplot as plt
 
