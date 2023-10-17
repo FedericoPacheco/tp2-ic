@@ -60,16 +60,16 @@ def hermite_polynomial():
 
     # Parametros
     # Ver: https://pygad.readthedocs.io/en/latest/pygad.html#pygad-ga-class
-    num_solutions = 10 # individuos
-    num_generations = 20 #100 # iteraciones
-    num_parents_mating = 5 # Number of solutions to be selected as parents in the mating pool.
+    num_solutions = 50 # individuos
+    num_generations = 100 # iteraciones
+    num_parents_mating = 10 # Number of solutions to be selected as parents in the mating pool.
     # Tipos:
     # sss: steady-state selection, rws: roulette wheel selection, random,
     # sus: stochastic universal selection, rank, tournament
     parent_selection_type = "sss"
     # Tipos: single_point, two_points, uniform, scattered
     crossover_type = "single_point"
-    p_crossover = 0.09
+    p_crossover = 0.6
     # Tipos: random, swap, inversion, scramble
     mutation_type = "random"
     p_mutation = 0.01
@@ -106,6 +106,17 @@ def hermite_polynomial():
     best_weights = pygad.kerasga.model_weights_as_matrix(model = hermite_model, weights_vector = best_solution)
     hermite_model.set_weights(weights = best_weights)
 
+    # Terminar de entrenar modelo con keras
+    hermite_model.compile(loss = "mse", optimizer = "adam", metrics = ["accuracy"])
+    # Ya tiene los pesos del AG
+    hermite_model.fit(
+        x_train_arr, 
+        h_train_arr, 
+        epochs = 20, 
+        validation_data= (x_test_arr, h_test_arr), 
+        verbose = 2
+    )
+    
     # Calcular el error / loss
     error_class = tensorflow.keras.losses.MeanSquaredError()
     best_sol_h_predic_arr = hermite_model.predict(x_test_arr)
@@ -119,12 +130,6 @@ def hermite_polynomial():
     plt.plot(x_test_arr, best_sol_h_predic_arr, "red", label = "Modelo")
     plt.legend(loc = "upper left")
     plt.show()
-    
-    # Terminar de entrenar modelo con keras
-    hermite_model.compile(loss = "mse", optimizer = "adam", metrics = ["accuracy"])
-    # Ya tiene los pesos del AG
-    hermite_model.fit(x_train_arr, h_train_arr, epochs=2, 
-                      validation_data=(x_test_arr, h_test_arr), verbose=2)
 
 if __name__ == "__main__":
     hermite_polynomial()
